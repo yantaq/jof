@@ -156,7 +156,7 @@ eksctl create iamserviceaccount \
   --namespace=kube-system \
   --name=aws-load-balancer-controller \
   --override-existing-serviceaccounts \
-  --set profile=$DEV \
+  --profile=$DEV \
   --region $JOF_REGION \
   --approve
 printf "done\n"
@@ -167,12 +167,9 @@ helm repo update &>/dev/null
 
 kubectl apply -k "github.com/aws/eks-charts/stable/aws-load-balancer-controller//crds?ref=master"
 
-helm upgrade -i aws-load-balancer-controller \
-  eks/aws-load-balancer-controller \
+helm upgrade -i aws-load-balancer-controller eks/aws-load-balancer-controller \
   --namespace kube-system \
   --set clusterName=$JOF_EKS_CLUSTER \
   --set serviceAccount.create=false \
   --set serviceAccount.name=aws-load-balancer-controller \
-  --set vpcId=$JOF_VPC_ID \
-  --set profile=$DEV \
-  --set region=$JOF_REGION
+  --set vpcId=$JOF_VPC_ID
