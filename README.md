@@ -32,3 +32,29 @@ Prepare the environment
 The container image that we’ll use to run Jenkins stores data under /var/jenkins_home path of the container. We’ll use Amazon EFS to create a file system that we can mount in the Jenkins pod as a persistent volume. This persistent volume will prevent data loss if the Jenkins pod terminates or restarts.
 
 Download the script to prepare the environment:
+
+    curl -O https://raw.githubusercontent.com/aws-samples/containers-blog-maelstrom/main/EFS-Jenkins/create-env.sh
+    chmod +x create-env.sh
+     ./create-env.sh
+
+The script will:
+
+* create an EFS file system, EFS mount points, an EFS access point, and a security group
+* create an EFS-backed storage class, persistent volume, and persistent volume claim
+* deploy the AWS Load Balancer Controller
+
+### **Install Jenkins**
+
+With the load balancer and persistent storage configured, we’re ready to install Jenkins.
+Use Helm to install Jenkins in your EKS cluster:
+
+    helm repo add jenkins https://charts.jenkins.io && helm repo update &>/dev/null
+
+    helm install jenkins jenkins/jenkins \
+      --set rbac.create=true \
+      --set controller.servicePort=80 \
+      --set controller.serviceType=ClusterIP \
+      --set persistence.existingClaim=jenkins-efs-claim \
+      --set controller.resources.requests.cpu=2000m \
+      --set controller.resources.requests.memory=4096Mi \
+      --set controller.serviceAnnotations."service\.beta\.kubernetes\.io/aws-load-balancer-type"=nlb-ip
