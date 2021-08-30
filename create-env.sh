@@ -4,7 +4,7 @@
 
 printf "Getting VPC ID: "
 JOF_VPC_ID=$(aws eks describe-cluster --name jenkins-on-fargate \
-  --profile $DEV
+  --profile $DEV \
   --region $JOF_REGION \
   --query "cluster.resourcesVpcConfig.vpcId" \
   --output text)
@@ -13,7 +13,7 @@ printf "$JOF_VPC_ID\n"
 
 printf "Gettting VPC CIDR block: "
 JOF_CIDR_BLOCK=$(aws ec2 describe-vpcs --vpc-ids $JOF_VPC_ID \
-  --profile $DEV
+  --profile $DEV \
   --query "Vpcs[].CidrBlock" \
   --region $JOF_REGION \
   --output text)
@@ -21,7 +21,7 @@ printf "$JOF_CIDR_BLOCK\n"
 
 printf "Creating a security Group for EFS: "
 JOF_EFS_SG_ID=$(aws ec2 create-security-group \
-  --profile $DEV
+  --profile $DEV \
   --region $JOF_REGION \
   --description Jenkins-on-Fargate \
   --group-name Jenkins-on-Fargate \
@@ -32,7 +32,7 @@ printf "$JOF_EFS_SG_ID\n"
 
 printf "Configuring the security group to allow ingress NFS traffic from the VPC\n"
 aws ec2 authorize-security-group-ingress \
-  --profile $DEV
+  --profile $DEV \
   --group-id $JOF_EFS_SG_ID \
   --protocol tcp \
   --port 2049 \
@@ -42,7 +42,7 @@ aws ec2 authorize-security-group-ingress \
 
 printf "Creating an EFS filesystem..."
 export JOF_EFS_FS_ID=$(aws efs create-file-system \
-  --profile $DEV
+  --profile $DEV \
   --creation-token Jenkins-on-Fargate \
   --performance-mode generalPurpose \
   --throughput-mode bursting \
@@ -58,13 +58,13 @@ sleep 10
 
 printf "Creating mount targets..."
 for subnet in $(aws eks describe-fargate-profile \
-  --profile $DEV
+  --profile $DEV \
   --output text --cluster-name jenkins-on-fargate\
   --region $JOF_REGION  \
   --fargate-profile-name fp-default  \
   --query "fargateProfile.subnets"); \
 do (aws efs create-mount-target \
-  --profile $DEV
+  --profile $DEV \
   --file-system-id $JOF_EFS_FS_ID \
   --subnet-id $subnet \
   --security-group $JOF_EFS_SG_ID \
@@ -74,7 +74,7 @@ printf "done\n"
 
 printf "Creating EFS access points..."
 JOF_EFS_AP=$(aws efs create-access-point \
-  --profile $DEV
+  --profile $DEV \
   --file-system-id $JOF_EFS_FS_ID \
   --posix-user Uid=1000,Gid=1000 \
   --root-directory "Path=/jenkins,CreationInfo={OwnerUid=1000,OwnerGid=1000,Permissions=777}" \
@@ -131,7 +131,7 @@ spec:
 # Install AWS Load Balancer Controller
 printf "Associatig OIDC provider..."
 eksctl utils associate-iam-oidc-provider \
-  --profile $DEV
+  --profile $DEV \
   --region $JOF_REGION \
   --cluster $JOF_EKS_CLUSTER\
   --approve
@@ -143,14 +143,14 @@ printf "done\n"
 
 printf "Creating IAM policy..."
 aws iam create-policy \
-  --profile $DEV
+  --profile $DEV \
   --policy-name AWSLoadBalancerControllerIAMPolicy \
   --policy-document file://iam-policy.json
 printf "done\n"
 
 printf "Creating service account..."
 eksctl create iamserviceaccount \
-  --profile $DEV
+  --profile $DEV \
   --attach-policy-arn=arn:aws:iam::$JOF_ACCOUNT_ID:policy/AWSLoadBalancerControllerIAMPolicy \
   --cluster=$JOF_EKS_CLUSTER \
   --namespace=kube-system \
