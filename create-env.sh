@@ -172,4 +172,5 @@ helm upgrade -i aws-load-balancer-controller eks/aws-load-balancer-controller \
   --set clusterName=$JOF_EKS_CLUSTER \
   --set serviceAccount.create=false \
   --set serviceAccount.name=aws-load-balancer-controller \
-  --set vpcId=$JOF_VPC_ID
+  --set vpcId=$JOF_VPC_ID \
+  --set replicaCount=1
